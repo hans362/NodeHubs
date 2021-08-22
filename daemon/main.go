@@ -11,19 +11,31 @@ import (
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/mem"
 	"google.golang.org/api/option"
-	"net"
+	"io/ioutil"
+	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
-func getHostname() string {
-	hostInfo, _ := host.Info()
-	return hostInfo.Hostname
+func getHostId() string {
+	hostId, _ := host.HostID()
+	return hostId
 }
 
 func getUptime() string {
+	hostUptime, _ := host.Uptime()
+	return strconv.FormatUint(hostUptime, 10)
+}
+
+func getOs() string {
 	hostInfo, _ := host.Info()
-	return strconv.FormatUint(hostInfo.Uptime, 10)
+	return hostInfo.OS
+}
+
+func getPlatform() string {
+	hostInfo, _ := host.Info()
+	return hostInfo.Platform
 }
 
 func getPlatformVersion() string {
@@ -34,6 +46,11 @@ func getPlatformVersion() string {
 func getCpuModel() string {
 	cpuInfo, _ := cpu.Info()
 	return cpuInfo[0].ModelName
+}
+
+func getCpuCores() string {
+	cpuCores, _ := cpu.Counts(true)
+	return strconv.Itoa(cpuCores)
 }
 
 func getCpuPercent() string {
@@ -59,32 +76,35 @@ func getDiskPercent() string {
 
 func getLoad() string {
 	loadInfo, _ := load.Avg()
-	return strconv.FormatFloat(loadInfo.Load1, 'f', 2, 64)
+	return strings.Join([]string{strconv.FormatFloat(loadInfo.Load1, 'f', 2, 64), strconv.FormatFloat(loadInfo.Load5, 'f', 2, 64), strconv.FormatFloat(loadInfo.Load15, 'f', 2, 64)}, " ")
 }
 
-func getIpAddr() string {
-	conn, _ := net.Dial("udp", "8.8.8.8:80")
-	defer conn.Close()
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	return localAddr.IP.String()
+func getIpInfo() string {
+	req, _ := http.Get("http://ip-api.com/json/")
+	defer req.Body.Close()
+	body, _ := ioutil.ReadAll(req.Body)
+	return string(body)
 }
 
 type Node struct {
 	Timestamp       string
 	Uptime          string
+	OS              string
+	Platform        string
 	PlatformVersion string
 	CPUModel        string
+	CPUCores        string
 	CPUPercent      string
 	MemPercent      string
 	SwapPercent     string
 	DiskPercent     string
 	Load            string
-	IPAddr          string
+	IPInfo          string
 }
 
 var dbURL = flag.String("db", "https://node-hubs-default-rtdb.firebaseio.com", "Firebase Realtime Database URL")
 var credentialsPath = flag.String("auth", "/root/.nodehubs/serviceAccountKey.json", "Firebase Service Account Key Path")
-var friendlyName = flag.String("name", getHostname(), "Friendly Name for the Server")
+var friendlyName = flag.String("name", getHostId(), "Friendly Name for the Server")
 
 func main() {
 	flag.Parse()
@@ -95,7 +115,7 @@ func main() {
 	opt := option.WithCredentialsFile(*credentialsPath)
 	app, err := firebase.NewApp(ctx, conf, opt)
 	if err != nil {
-		fmt.Printf("Error initializing app: %v\n", err)
+		fmt.Printf("Error initializing firebase app: %v\n", err)
 		return
 	}
 	client, err := app.Database(ctx)
@@ -103,19 +123,22 @@ func main() {
 		fmt.Printf("Error initializing database client: %v\n", err)
 		return
 	}
-	ref := client.NewRef("/")
+	ref := client.NewRef("/nodes")
 	nodeRef := ref.Child(*friendlyName)
 	if _, err := nodeRef.Push(ctx, &Node{
 		Timestamp:       strconv.FormatInt(time.Now().Unix(), 10),
 		Uptime:          getUptime(),
+		OS:              getOs(),
+		Platform:        getPlatform(),
 		PlatformVersion: getPlatformVersion(),
 		CPUModel:        getCpuModel(),
+		CPUCores:        getCpuCores(),
 		CPUPercent:      getCpuPercent(),
 		MemPercent:      getMemPercent(),
 		SwapPercent:     getSwapPercent(),
 		DiskPercent:     getDiskPercent(),
 		Load:            getLoad(),
-		IPAddr:          getIpAddr(),
+		IPInfo:          getIpInfo(),
 	}); err != nil {
 		fmt.Printf("Error reporting data: %v\n", err)
 	}
