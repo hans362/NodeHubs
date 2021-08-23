@@ -23,6 +23,11 @@ func getHostId() string {
 	return hostId
 }
 
+func getHostname() string {
+	hostInfo, _ := host.Info()
+	return hostInfo.Hostname
+}
+
 func getUptime() string {
 	hostUptime, _ := host.Uptime()
 	return strconv.FormatUint(hostUptime, 10)
@@ -87,7 +92,9 @@ func getIpInfo() string {
 }
 
 type Node struct {
+	FriendlyName    string
 	Timestamp       string
+	Hostname        string
 	Uptime          string
 	OS              string
 	Platform        string
@@ -104,7 +111,7 @@ type Node struct {
 
 var dbURL = flag.String("db", "https://node-hubs-default-rtdb.firebaseio.com", "Firebase Realtime Database URL")
 var credentialsPath = flag.String("auth", "/root/.nodehubs/serviceAccountKey.json", "Firebase Service Account Key Path")
-var friendlyName = flag.String("name", getHostId(), "Friendly Name for the Server")
+var friendlyName = flag.String("name", getHostname(), "Friendly Name for the Server")
 
 func main() {
 	flag.Parse()
@@ -120,13 +127,15 @@ func main() {
 	}
 	client, err := app.Database(ctx)
 	if err != nil {
-		fmt.Printf("Error initializing database client: %v\n", err)
+		fmt.Printf("Error initializing realtime database client: %v\n", err)
 		return
 	}
 	ref := client.NewRef("/nodes")
-	nodeRef := ref.Child(*friendlyName)
+	nodeRef := ref.Child(getHostId())
 	if _, err := nodeRef.Push(ctx, &Node{
+		FriendlyName:    *friendlyName,
 		Timestamp:       strconv.FormatInt(time.Now().Unix(), 10),
+		Hostname:        getHostname(),
 		Uptime:          getUptime(),
 		OS:              getOs(),
 		Platform:        getPlatform(),
@@ -140,6 +149,8 @@ func main() {
 		Load:            getLoad(),
 		IPInfo:          getIpInfo(),
 	}); err != nil {
-		fmt.Printf("Error reporting data: %v\n", err)
+		fmt.Printf("Failed to report data to firebase: %v\n", err)
+		return
 	}
+	fmt.Printf("Successfully reported data to firebase\n")
 }
