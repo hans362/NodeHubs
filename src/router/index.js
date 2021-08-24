@@ -3,8 +3,8 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import DashboardLayout from "@/layout/DashboardLayout";
 
 import Dashboard from "../views/Dashboard.vue";
-import Icons from "../views/Icons.vue";
-import Tables from "../views/Tables.vue";
+import Nodes from "../views/Nodes.vue";
+import Services from "../views/Services.vue";
 
 const routes = [
   {
@@ -20,12 +20,12 @@ const routes = [
       {
         path: "/nodes",
         name: "nodes",
-        components: { default: Icons },
+        components: { default: Nodes },
       },
       {
         path: "/services",
         name: "services",
-        components: { default: Tables },
+        components: { default: Services },
       },
     ],
   },

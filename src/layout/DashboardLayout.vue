@@ -2,13 +2,13 @@
   <div class="wrapper" :class="{ 'nav-open': $sidebar.showSidebar }">
     <side-bar
       :background-color="sidebarBackground"
-      short-title="Argon"
-      title="Argon"
+      short-title="NodeHubs"
+      title="NodeHubs"
     >
       <template v-slot:links>
         <sidebar-item
           :link="{
-            name: 'Dashboard',
+            name: '概览',
             icon: 'ni ni-tv-2 text-primary',
             path: '/dashboard',
           }"
@@ -16,15 +16,15 @@
 
         <sidebar-item
           :link="{
-            name: 'Nodes',
-            icon: 'ni ni-planet text-blue',
+            name: '节点监控',
+            icon: 'ni ni-sound-wave text-green',
             path: '/nodes',
           }"
         />
         <sidebar-item
           :link="{
-            name: 'Services',
-            icon: 'ni ni-pin-3 text-orange',
+            name: '服务监控',
+            icon: 'ni ni-app text-orange',
             path: '/services',
           }"
         />
@@ -32,7 +32,6 @@
     </side-bar>
     <div class="main-content" :data="sidebarBackground">
       <div @click="toggleSidebar">
-        <!-- your content here -->
         <router-view></router-view>
         <content-footer v-if="!$route.meta.hideFooter"></content-footer>
       </div>
@@ -48,7 +47,7 @@ export default {
   },
   data() {
     return {
-      sidebarBackground: "vue", //vue|blue|orange|green|red|primary
+      sidebarBackground: "vue",
     };
   },
   methods: {

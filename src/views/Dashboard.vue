@@ -4,65 +4,65 @@
       <div class="row">
         <div class="col-xl-3 col-lg-6">
           <stats-card
-            title="Total traffic"
-            type="gradient-red"
-            sub-title="350,897"
-            icon="ni ni-active-40"
-            class="mb-4 mb-xl-0"
-          >
-            <template v-slot:footer>
-              <span class="text-success mr-2">
-                <i class="fa fa-arrow-up"></i> 3.48%
-              </span>
-              <span class="text-nowrap">Since last month</span>
-            </template>
-          </stats-card>
-        </div>
-        <div class="col-xl-3 col-lg-6">
-          <stats-card
-            title="Total traffic"
-            type="gradient-orange"
-            sub-title="2,356"
-            icon="ni ni-chart-pie-35"
-            class="mb-4 mb-xl-0"
-          >
-            <template v-slot:footer>
-              <span class="text-success mr-2">
-                <i class="fa fa-arrow-up"></i> 12.18%
-              </span>
-              <span class="text-nowrap">Since last month</span>
-            </template>
-          </stats-card>
-        </div>
-        <div class="col-xl-3 col-lg-6">
-          <stats-card
-            title="Sales"
+            title="正常节点"
             type="gradient-green"
-            sub-title="924"
-            icon="ni ni-money-coins"
+            :sub-title="onlineNodesCnt"
+            icon="ni ni-button-play"
             class="mb-4 mb-xl-0"
           >
             <template v-slot:footer>
-              <span class="text-danger mr-2">
-                <i class="fa fa-arrow-down"></i> 5.72%
+              <span class="text-success mr-2">
+                <i class="fa fa-circle"></i>
               </span>
-              <span class="text-nowrap">Since last month</span>
+              <span class="text-nowrap">近5分钟在线</span>
             </template>
           </stats-card>
         </div>
         <div class="col-xl-3 col-lg-6">
           <stats-card
-            title="Performance"
-            type="gradient-info"
-            sub-title="49,65%"
-            icon="ni ni-chart-bar-32"
+            title="异常节点"
+            type="gradient-red"
+            :sub-title="offlineNodesCnt"
+            icon="ni ni-button-pause"
+            class="mb-4 mb-xl-0"
+          >
+            <template v-slot:footer>
+              <span class="text-warning mr-2">
+                <i class="fa fa-circle"></i>
+              </span>
+              <span class="text-nowrap">近5分钟离线</span>
+            </template>
+          </stats-card>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+          <stats-card
+            title="正常服务"
+            type="gradient-green"
+            :sub-title="onlineServicesCnt"
+            icon="ni ni-button-play"
             class="mb-4 mb-xl-0"
           >
             <template v-slot:footer>
               <span class="text-success mr-2">
-                <i class="fa fa-arrow-up"></i> 54.8%
+                <i class="fa fa-circle"></i>
               </span>
-              <span class="text-nowrap">Since last month</span>
+              <span class="text-nowrap">近5分钟在线</span>
+            </template>
+          </stats-card>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+          <stats-card
+            title="异常服务"
+            type="gradient-red"
+            :sub-title="offlineServicesCnt"
+            icon="ni ni-button-pause"
+            class="mb-4 mb-xl-0"
+          >
+            <template v-slot:footer>
+              <span class="text-warning mr-2">
+                <i class="fa fa-circle"></i>
+              </span>
+              <span class="text-nowrap">近5分钟离线</span>
             </template>
           </stats-card>
         </div>
@@ -77,8 +77,8 @@
             <template v-slot:header>
               <div class="row align-items-center">
                 <div class="col">
-                  <h6 class="text-light text-uppercase ls-1 mb-1">Overview</h6>
-                  <h5 class="h3 text-white mb-0">Sales value</h5>
+                  <h6 class="text-light text-uppercase ls-1 mb-1">负载概览</h6>
+                  <h5 class="h3 text-white mb-0">5分钟负载（%）</h5>
                 </div>
                 <div class="col">
                   <ul class="nav nav-pills justify-content-end">
@@ -86,22 +86,22 @@
                       <a
                         class="nav-link py-2 px-3"
                         href="#"
-                        :class="{ active: bigLineChart.activeIndex === 0 }"
-                        @click.prevent="initBigChart(0)"
+                        :class="{ active: nodesLoadChart.activeIndex === 0 }"
+                        @click.prevent="initNodesLoadChart(0)"
                       >
-                        <span class="d-none d-md-block">Month</span>
-                        <span class="d-md-none">M</span>
+                        <span class="d-none d-md-block">周视图</span>
+                        <span class="d-md-none">周</span>
                       </a>
                     </li>
                     <li class="nav-item">
                       <a
                         class="nav-link py-2 px-3"
                         href="#"
-                        :class="{ active: bigLineChart.activeIndex === 1 }"
-                        @click.prevent="initBigChart(1)"
+                        :class="{ active: nodesLoadChart.activeIndex === 1 }"
+                        @click.prevent="initNodesLoadChart(1)"
                       >
-                        <span class="d-none d-md-block">Week</span>
-                        <span class="d-md-none">W</span>
+                        <span class="d-none d-md-block">日视图</span>
+                        <span class="d-md-none">日</span>
                       </a>
                     </li>
                   </ul>
@@ -109,7 +109,7 @@
               </div>
             </template>
             <div class="chart-area">
-              <canvas :height="350" :id="salesChartID"></canvas>
+              <canvas :height="350" :id="nodesLoadChartID"></canvas>
             </div>
           </card>
         </div>
@@ -132,7 +132,7 @@
           </card>
         </div>
       </div>
-      <!-- End charts-->
+      <!--End charts-->
 
       <!--Tables-->
       <div class="row mt-5">
@@ -151,6 +151,7 @@
 // Charts
 import { ordersChart } from "@/components/Charts/Chart";
 import Chart from "chart.js";
+import axios from "axios";
 
 import PageVisitsTable from "./Dashboard/PageVisitsTable";
 import SocialTrafficTable from "./Dashboard/SocialTrafficTable";
@@ -163,9 +164,13 @@ export default {
   },
   data() {
     return {
-      salesChartID: "salesChart",
+      onlineNodesCnt: null,
+      offlineNodesCnt: null,
+      onlineServicesCnt: "0",
+      offlineServicesCnt: "0",
+      nodesLoadChartID: "nodesLoadChart",
       ordersChartID: "ordersChart",
-      bigLineChart: {
+      nodesLoadChart: {
         allData: [
           [0, 20, 10, 30, 15, 40, 20, 60, 60],
           [0, 20, 5, 25, 10, 30, 15, 40, 40],
@@ -175,10 +180,35 @@ export default {
     };
   },
   methods: {
-    initBigChart(index) {
+    getOnlineNodesCnt() {
+      axios
+        .get(
+          process.env.VUE_APP_FIREBASE_RTDB_URL +
+            'nodes.json?orderBy="LastUpdate"&startAt="' +
+            (Math.round(Date.now() / 1000) - 305).toString() +
+            '"&endAt="' +
+            (Math.round(Date.now() / 1000) + 5).toString() +
+            '"'
+        )
+        .then((onlineNodes) => {
+          this.onlineNodesCnt = Object.keys(onlineNodes.data).length.toString();
+        });
+    },
+    getOfflineNodesCnt() {
+      axios
+        .get(process.env.VUE_APP_FIREBASE_RTDB_URL + "nodes.json?shallow=true")
+        .then((totalNodes) => {
+          this.offlineNodesCnt = (
+            Object.keys(totalNodes.data).length -
+            parseInt(this.onlineNodesCnt, 10)
+          ).toString();
+        });
+    },
+    getNodesLoad() {},
+    initNodesLoadChart(index) {
       chart.destroy();
       chart = new Chart(
-        document.getElementById(this.salesChartID).getContext("2d"),
+        document.getElementById(this.nodesLoadChartID).getContext("2d"),
         {
           type: "line",
           data: {
@@ -191,7 +221,7 @@ export default {
                 borderColor: "#5e72e4",
                 pointRadius: 0,
                 backgroundColor: "transparent",
-                data: this.bigLineChart.allData[index],
+                data: this.nodesLoadChart.allData[index],
               },
             ],
           },
@@ -246,12 +276,14 @@ export default {
           },
         }
       );
-      this.bigLineChart.activeIndex = index;
+      this.nodesLoadChart.activeIndex = index;
     },
   },
   mounted() {
+    this.getOnlineNodesCnt();
+    this.getOfflineNodesCnt();
     chart = new Chart(
-      document.getElementById(this.salesChartID).getContext("2d"),
+      document.getElementById(this.nodesLoadChartID).getContext("2d"),
       {
         type: "line",
         data: {
@@ -264,7 +296,7 @@ export default {
               borderColor: "#5e72e4",
               pointRadius: 0,
               backgroundColor: "transparent",
-              data: this.bigLineChart.allData[1],
+              data: this.nodesLoadChart.allData[1],
             },
           ],
         },
