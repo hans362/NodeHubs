@@ -175,6 +175,7 @@ export default {
               .then((rawInfo) => {
                 var nodeInfo = rawInfo.data[Object.keys(rawInfo.data)[0]];
                 console.log(nodeInfo);
+                console.log(nodeInfo.Load.split(" ")[1] / nodeInfo.CPUCores);
                 var nodeStat = this.getStat(parseInt(nodeInfo.Timestamp));
                 var node = {
                   countryFlag: JSON.parse(
@@ -190,13 +191,13 @@ export default {
                   ip: JSON.parse(nodeInfo.IPInfo).query.toString(),
                   load: nodeStat
                     ? Math.round(
-                        parseInt(nodeInfo.Load.split(" ")[1]) /
-                          parseInt(nodeInfo.CPUCores)
+                        (nodeInfo.Load.split(" ")[1] / nodeInfo.CPUCores) * 100
                       )
                     : 0,
                   loadStatusType: this.getStatusType(
-                    parseInt(nodeInfo.Load.split(" ")[1]) /
-                      parseInt(nodeInfo.CPUCores)
+                    Math.round(
+                      (nodeInfo.Load.split(" ")[1] / nodeInfo.CPUCores) * 100
+                    )
                   ),
                   cpuModel: nodeInfo.CPUModel,
                   cpu: nodeStat ? parseInt(nodeInfo.CPUPercent) : 0,
