@@ -152,5 +152,11 @@ func main() {
 		fmt.Printf("Failed to report data to firebase: %v\n", err)
 		return
 	}
+	if err := nodeRef.Update(ctx, map[string]interface{}{
+		"LastUpdate": strconv.FormatInt(time.Now().Unix(), 10),
+	}); err != nil {
+		fmt.Printf("Failed to report data to firebase: %v\n", err)
+		return
+	}
 	fmt.Printf("Successfully reported data to firebase\n")
 }
