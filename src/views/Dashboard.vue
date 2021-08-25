@@ -180,31 +180,30 @@ export default {
     };
   },
   methods: {
-    getOnlineNodesCnt() {
+    getNodesStat() {
       axios
-        .get(
-          process.env.VUE_APP_FIREBASE_RTDB_URL +
-            'nodes.json?orderBy="LastUpdate"&startAt="' +
-            (Math.round(Date.now() / 1000) - 305).toString() +
-            '"&endAt="' +
-            (Math.round(Date.now() / 1000) + 5).toString() +
-            '"'
-        )
-        .then((onlineNodes) => {
-          this.onlineNodesCnt = Object.keys(onlineNodes.data).length.toString();
-        });
-    },
-    getOfflineNodesCnt() {
-      axios
-        .get(process.env.VUE_APP_FIREBASE_RTDB_URL + "nodes.json?shallow=true")
-        .then((totalNodes) => {
+        .get(process.env.VUE_APP_FIREBASE_RTDB_URL + "/nodes.json?shallow=true")
+        .then(async (totalNodes) => {
+          await axios
+            .get(
+              `${
+                process.env.VUE_APP_FIREBASE_RTDB_URL
+              }/nodes.json?orderBy="LastUpdate"&startAt="${(
+                Math.round(Date.now() / 1000) - 305
+              ).toString()}"&endAt="${(
+                Math.round(Date.now() / 1000) + 5
+              ).toString()}"`
+            )
+            .then((onlineNodes) => {
+              this.onlineNodesCnt = Object.keys(
+                onlineNodes.data
+              ).length.toString();
+            });
           this.offlineNodesCnt = (
-            Object.keys(totalNodes.data).length -
-            parseInt(this.onlineNodesCnt, 10)
+            Object.keys(totalNodes.data).length - parseInt(this.onlineNodesCnt)
           ).toString();
         });
     },
-    getNodesLoad() {},
     initNodesLoadChart(index) {
       chart.destroy();
       chart = new Chart(
@@ -280,8 +279,7 @@ export default {
     },
   },
   mounted() {
-    this.getOnlineNodesCnt();
-    this.getOfflineNodesCnt();
+    this.getNodesStat();
     chart = new Chart(
       document.getElementById(this.nodesLoadChartID).getContext("2d"),
       {

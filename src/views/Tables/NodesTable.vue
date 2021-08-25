@@ -23,21 +23,19 @@
       >
         <template v-slot:columns>
           <th>节点名称</th>
-          <th>操作系统</th>
-          <th>在线时间</th>
-          <th>负载占用率</th>
+          <th>基本信息</th>
+          <th>负载占用</th>
           <th>CPU 占用率</th>
           <th>内存占用率</th>
           <th>SWAP 占用率</th>
           <th>磁盘占用率</th>
-          <th></th>
         </template>
 
         <template v-slot:default="row">
           <th scope="row">
             <div class="media align-items-center">
-              <a href="#" class="avatar rounded-circle mr-3">
-                <img alt="Image placeholder" :src="row.item.countryImg" />
+              <a href="#" class="mr-3">
+                <country-flag :country="row.item.countryFlag" size="big" />
               </a>
               <div class="media-body">
                 <span class="name mb-0 text-sm">{{
@@ -52,10 +50,11 @@
             </div>
           </th>
           <td>
+            {{ row.item.cpuModel }}
+            <br />
             {{ row.item.os }}
-          </td>
-          <td>
-            {{ row.item.uptime }}
+            <br />
+            {{ row.item.ip }}
           </td>
           <td>
             <div class="d-flex align-items-center">
@@ -128,8 +127,14 @@
   </div>
 </template>
 <script>
+import countryFlag from "vue-country-flag-next";
+import axios from "axios";
+
 export default {
   name: "nodes-table",
+  components: {
+    countryFlag,
+  },
   props: {
     type: {
       type: String,
@@ -138,27 +143,87 @@ export default {
   },
   data() {
     return {
-      tableData: [
-        {
-          countryImg: "img/theme/bootstrap.jpg",
-          friendlyName: "Server",
-          statusType: "warning",
-          status: "离线",
-          os: "Unknown",
-          uptime: "0",
-          load: 0,
-          loadStatusType: "failure",
-          cpu: 0,
-          cpuStatusType: "failure",
-          mem: 0,
-          memStatusType: "failure",
-          swap: 0,
-          swapStatusType: "failure",
-          disk: 0,
-          diskStatusType: "failure",
-        },
-      ],
+      tableData: [],
     };
+  },
+  methods: {
+    getStat(lastUpdate) {
+      if (lastUpdate <= Math.round(Date.now() / 1000) - 305) {
+        return false;
+      } else {
+        return true;
+      }
+    },
+    getStatusType(percent) {
+      if (percent <= 60) {
+        return "success";
+      } else if (percent <= 80) {
+        return "warning";
+      } else {
+        return "danger";
+      }
+    },
+    getNodesList() {
+      axios
+        .get(`${process.env.VUE_APP_FIREBASE_RTDB_URL}/nodes.json?shallow=true`)
+        .then((nodesInfo) => {
+          Object.keys(nodesInfo.data).forEach((nodeId) => {
+            axios
+              .get(
+                `${process.env.VUE_APP_FIREBASE_RTDB_URL}/nodes/${nodeId}.json?orderBy="Timestamp"&limitToLast=1`
+              )
+              .then((rawInfo) => {
+                var nodeInfo = rawInfo.data[Object.keys(rawInfo.data)[0]];
+                console.log(nodeInfo);
+                var nodeStat = this.getStat(parseInt(nodeInfo.Timestamp));
+                var node = {
+                  countryFlag: JSON.parse(
+                    nodeInfo.IPInfo
+                  ).countryCode.toLowerCase(),
+                  friendlyName: nodeInfo.FriendlyName,
+                  statusType: nodeStat ? "success" : "danger",
+                  status: nodeStat ? "在线" : "离线",
+                  os: `${
+                    nodeInfo.Platform.charAt(0).toUpperCase() +
+                    nodeInfo.Platform.slice(1)
+                  } ${nodeInfo.PlatformVersion}`,
+                  ip: JSON.parse(nodeInfo.IPInfo).query.toString(),
+                  load: nodeStat
+                    ? Math.round(
+                        parseInt(nodeInfo.Load.split(" ")[1]) /
+                          parseInt(nodeInfo.CPUCores)
+                      )
+                    : 0,
+                  loadStatusType: this.getStatusType(
+                    parseInt(nodeInfo.Load.split(" ")[1]) /
+                      parseInt(nodeInfo.CPUCores)
+                  ),
+                  cpuModel: nodeInfo.CPUModel,
+                  cpu: nodeStat ? parseInt(nodeInfo.CPUPercent) : 0,
+                  cpuStatusType: this.getStatusType(
+                    parseInt(nodeInfo.CPUPercent)
+                  ),
+                  mem: nodeStat ? parseInt(nodeInfo.MemPercent) : 0,
+                  memStatusType: this.getStatusType(
+                    parseInt(nodeInfo.MemPercent)
+                  ),
+                  swap: nodeStat ? parseInt(nodeInfo.SwapPercent) : 0,
+                  swapStatusType: this.getStatusType(
+                    parseInt(nodeInfo.SwapPercent)
+                  ),
+                  disk: nodeStat ? parseInt(nodeInfo.DiskPercent) : 0,
+                  diskStatusType: this.getStatusType(
+                    parseInt(nodeInfo.DiskPercent)
+                  ),
+                };
+                this.tableData.push(node);
+              });
+          });
+        });
+    },
+  },
+  mounted() {
+    this.getNodesList();
   },
 };
 </script>
